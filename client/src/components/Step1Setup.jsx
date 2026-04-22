@@ -4,10 +4,12 @@ import { FaUserTie, FaMicrophoneAlt, FaChartLine, FaFileUpload } from "react-ico
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
 import { setUserData } from "../redux/userSlice";
+import { useNavigate } from "react-router-dom";
 
 const Step1Setup = ({ onStart }) => {
   const {userData}=useSelector((state)=>state.user)
   const dispatch=useDispatch()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState("");
   const [experience, setExperience] = useState("");
@@ -24,6 +26,13 @@ const Step1Setup = ({ onStart }) => {
 
   const handleUploadResume = async () => {
     if (!resumeFile || analyzing) return;
+
+    // Check if user is authenticated
+    if (!userData) {
+      alert("Please login first to upload resume");
+      navigate("/auth");
+      return;
+    }
 
     setAnalyzing(true);
 
@@ -59,6 +68,18 @@ const Step1Setup = ({ onStart }) => {
   };
 
   const handleStart = async () => {
+    if (!userData) {
+      alert("Please login first to start interview");
+      navigate("/auth");
+      return;
+    }
+
+    // Check if user has enough credits
+    if (userData.credits < 50) {
+      alert("You need at least 50 credits to start an interview. Current credits: " + userData.credits);
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await axios.post(Serverurl + "/api/interview/generate-questions", 
@@ -256,7 +277,7 @@ const Step1Setup = ({ onStart }) => {
             disabled={!role || !experience || loading ||  analyzing}
             className="w-full disabled:bg-gray-400 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold"
           >
-            { loading ? "Starting" : "Start Interview"}
+            { loading ? "Starting Interview..." : `Start Interview (50 credits)`}
           </motion.button>
         </motion.div>
       </div>
